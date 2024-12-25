@@ -1,5 +1,5 @@
-import axios from "axios";
 import { Redis } from "@upstash/redis";
+import axios from "axios";
 
 // Initialize Redis client
 const redis = new Redis({
@@ -27,11 +27,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Extract path and query parameters
-    const params = req.query.params || [];
-    const tmdbPath = params.join("/");
+    // Get the full path from the URL
+    const path = req.url.replace("/api/tmdb/", "");
     const queryString = new URLSearchParams(req.query).toString();
-    const cacheKey = `tmdb:${tmdbPath}:${queryString}`;
+    const cacheKey = `tmdb:${path}:${queryString}`;
 
     // Check cache first
     const cachedData = await redis.get(cacheKey);
@@ -40,7 +39,7 @@ export default async function handler(req, res) {
     }
 
     // Make request to TMDB
-    const tmdbUrl = `https://api.themoviedb.org/3/${tmdbPath}?${queryString}`;
+    const tmdbUrl = `https://api.themoviedb.org/3/${path}?${queryString}`;
     const response = await axios.get(tmdbUrl, tmdbConfig);
 
     // Cache the response
