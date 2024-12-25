@@ -1,4 +1,3 @@
-// api/tmdb/[...params].js
 import { Redis } from "@upstash/redis";
 import axios from "axios";
 
@@ -34,7 +33,17 @@ export default async function handler(req, res) {
     const cacheKey = `tmdb:${pathPart}${queryParams}`;
     const cachedData = await redis.get(cacheKey);
     if (cachedData) {
-      return res.status(200).json(JSON.parse(cachedData));
+      // Check if cached data is a string
+      if (typeof cachedData === "string") {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          return res.status(200).json(parsedData);
+        } catch (error) {
+          console.error("Error parsing cached data:", error);
+        }
+      } else {
+        console.error("Cached data is not a string:", cachedData);
+      }
     }
 
     // Make request to TMDB
