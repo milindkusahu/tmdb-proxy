@@ -1,23 +1,14 @@
+// api/tmdb/[...params].js
 import { Redis } from "@upstash/redis";
 import axios from "axios";
 
-// Initialize Redis client
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const CACHE_DURATION = 3600; // 1 hour
-
-const tmdbConfig = {
-  headers: {
-    Authorization: `Bearer ${process.env.TMDB_ACCESS_TOKEN}`,
-    accept: "application/json",
-  },
-};
-
 export default async function handler(req, res) {
-  // Enable CORS
+  // Add CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
 
@@ -27,23 +18,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get the full path from the URL
-    const path = req.url.replace("/api/tmdb/", "");
-    const queryString = new URLSearchParams(req.query).toString();
-    const cacheKey = `tmdb:${path}:${queryString}`;
+    // Get the path from the URL by removing '/api/tmdb/'
+    const fullPath = req.url.split("/api/tmdb/")[1];
+    const [pathPart, queryPart] = fullPath.split("?");
 
-    // Check cache first
+    // Create query string
+    const queryParams = queryPart ? `?${queryPart}` : "";
+
+    // Create TMDB URL
+    const tmdbUrl = `https://api.themoviedb.org/3/${pathPart}${queryParams}`;
+
+    console.log("TMDB URL:", tmdbUrl);
+
+    // Check cache
+    const cacheKey = `tmdb:${pathPart}${queryParams}`;
     const cachedData = await redis.get(cacheKey);
     if (cachedData) {
       return res.status(200).json(JSON.parse(cachedData));
     }
 
     // Make request to TMDB
-    const tmdbUrl = `https://api.themoviedb.org/3/${path}?${queryString}`;
-    const response = await axios.get(tmdbUrl, tmdbConfig);
+    const response = await axios.get(tmdbUrl, {
+      headers: {
+        Authorization: `Bearer ${process.env.TMDB_ACCESS_TOKEN}`,
+        accept: "application/json",
+      },
+    });
 
     // Cache the response
-    await redis.setex(cacheKey, CACHE_DURATION, JSON.stringify(response.data));
+    await redis.setex(cacheKey, 3600, JSON.stringify(response.data));
 
     return res.status(200).json(response.data);
   } catch (error) {

@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/api/tmdb/(.*)",
-      "dest": "/api/tmdb/[...path].js"
+      "dest": "/api/tmdb/[...params].js"
     }
   ]
 }
