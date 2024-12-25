@@ -1,0 +1,19 @@
+{
+  "name": "tmdb-proxy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@upstash/redis": "^1.34.3",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "vercel": "^32.3.0"
+  }
+}
