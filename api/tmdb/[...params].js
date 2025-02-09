@@ -1,10 +1,4 @@
-import { Redis } from "@upstash/redis";
 import axios from "axios";
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
 
 export default async function handler(req, res) {
   // Add CORS headers
@@ -30,23 +24,6 @@ export default async function handler(req, res) {
 
     console.log("TMDB URL:", tmdbUrl);
 
-    // Check cache
-    const cacheKey = `tmdb:${pathPart}${queryParams}`;
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      // Check if cached data is a string
-      if (typeof cachedData === "string") {
-        try {
-          const parsedData = JSON.parse(cachedData);
-          return res.status(200).json(parsedData);
-        } catch (error) {
-          console.error("Error parsing cached data:", error);
-        }
-      } else {
-        console.error("Cached data is not a string:", cachedData);
-      }
-    }
-
     // Make request to TMDB
     const response = await axios.get(tmdbUrl, {
       headers: {
@@ -54,9 +31,6 @@ export default async function handler(req, res) {
         accept: "application/json",
       },
     });
-
-    // Cache the response
-    await redis.setex(cacheKey, 3600, JSON.stringify(response.data));
 
     return res.status(200).json(response.data);
   } catch (error) {
